@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
 import json
@@ -45,6 +45,13 @@ class EmailTemplate:
     body: str
     variant: EmailVariant
 
+@dataclass
+class CustomPrompt:
+    instruction: str
+    tone: Optional[str] = None
+    focus_points: Optional[List[str]] = None
+    custom_template: Optional[str] = None
+
 class EmailPipeline:
     def __init__(self):
         # Get credentials from environment variables
@@ -62,6 +69,7 @@ class EmailPipeline:
 
     def generate_system_prompt(self) -> str:
         return """You are an expert at crafting professional investor emails.
+        Remember this is the first time you are sending mails to them
         Always format your response with:
         Subject: [Clear, concise subject line]
         
@@ -72,8 +80,45 @@ class EmailPipeline:
         [Founder Name]
         [Company Name]"""
 
-    def generate_email_variants(self, founder: Founder, investor: Investor) -> List[EmailTemplate]:
-        """Generate 4 different email variants using GROQ API"""
+    def generate_custom_context(self, founder: Founder, investor: Investor, 
+                              custom_prompt: CustomPrompt) -> str:
+        """Generate context for custom prompt"""
+        base_context = f"""
+        Founder Details:
+        - Name: {founder.name}
+        - Company: {founder.company_name}
+        - Industry: {founder.industry}
+        - Stage: {founder.stage}
+        - Pitch: {founder.pitch}
+        - Metrics: 
+          - MRR: {founder.metrics.get('mrr', 'N/A')}
+          - Growth: {founder.metrics.get('growth', 'N/A')}
+          - Customers: {founder.metrics.get('customers', 'N/A')}
+        
+        Investor Details:
+        - Name: {investor.name}
+        - Firm: {investor.firm}
+        - Focus Areas: {', '.join(investor.investment_focus)}
+        - Stage Preference: {', '.join(investor.preferred_stages)}
+        
+        Instructions:
+        {custom_prompt.instruction}
+        """
+        
+        if custom_prompt.tone:
+            base_context += f"\nTone: {custom_prompt.tone}"
+            
+        if custom_prompt.focus_points:
+            base_context += f"\nKey Focus Points:\n" + "\n".join(f"- {point}" for point in custom_prompt.focus_points)
+            
+        if custom_prompt.custom_template:
+            base_context += f"\nTemplate Structure:\n{custom_prompt.custom_template}"
+            
+        return base_context
+
+    def generate_email_variants(self, founder: Founder, investor: Investor, 
+                              custom_prompt: Optional[CustomPrompt] = None) -> List[EmailTemplate]:
+        """Generate email variants using GROQ API with optional custom prompt"""
         try:
             base_context = f"""
             Founder Details:
@@ -103,6 +148,33 @@ class EmailPipeline:
                 EmailVariant.VISION: "Generate a visionary email focusing on industry impact and future potential."
             }
             
+            # Add custom prompt if provided
+            if custom_prompt:
+                try:
+                    context = self.generate_custom_context(founder, investor, custom_prompt)
+                    response = self.groq_client.chat.completions.create(
+                        model="mixtral-8x7b-32768",
+                        messages=[
+                            {"role": "system", "content": self.generate_system_prompt()},
+                            {"role": "user", "content": context}
+                        ],
+                        temperature=0.7,
+                        max_tokens=1000
+                    )
+                    
+                    email_content = response.choices[0].message.content
+                    subject = email_content.split("Subject:")[1].split("Body:")[0].strip()
+                    body = email_content.split("Body:")[1].strip()
+                    
+                    variants.append(EmailTemplate(
+                        subject=subject,
+                        body=body,
+                        variant=EmailVariant.CUSTOM
+                    ))
+                except Exception as e:
+                    print(f"Error generating custom variant: {str(e)}")
+            
+            # Generate standard variants
             for variant, instruction in prompts.items():
                 try:
                     response = self.groq_client.chat.completions.create(
@@ -117,7 +189,6 @@ class EmailPipeline:
                     
                     email_content = response.choices[0].message.content
                     
-                    # Parse the response
                     try:
                         subject = email_content.split("Subject:")[1].split("Body:")[0].strip()
                         body = email_content.split("Body:")[1].strip()
@@ -254,10 +325,12 @@ def main():
             email="jane@vcpartners.com"
         )
         
-        print("\nGenerating email variants...")
+        print("\nGenerating AI email variants...")
+        # First generate standard AI variants
         email_variants = pipeline.generate_email_variants(founder, investor)
         
-        # Display variants with clear separation
+        # Display AI-generated variants
+        print("\nAI-Generated Email Variants:")
         for i, variant in enumerate(email_variants, 1):
             print(f"\n{'='*50}")
             print(f"Variant {i}: {variant.variant.value.upper()}")
@@ -266,19 +339,64 @@ def main():
             print(f"\nBody:\n{variant.body}")
             print(f"\n{'='*50}")
         
-        # Let user select variant
+        # Now ask if user wants to create a custom prompt
+        print("\nOptions:")
+        print("1-4: Select from AI-generated variants above")
+        print("5: Create a custom prompt")
+        print("0: Exit")
+        
         while True:
             try:
-                choice = int(input("\nSelect email variant (1-4) or 0 to exit: "))
+                choice = int(input("\nEnter your choice (0-5): "))
                 if choice == 0:
                     print("Exiting program...")
                     return
-                if 1 <= choice <= len(email_variants):
+                elif choice == 5:
+                    # Handle custom prompt
+                    instruction = input("\nEnter your custom instruction: ")
+                    tone = input("Enter desired tone (press enter to skip): ").strip() or None
+                    
+                    focus_points = []
+                    while True:
+                        point = input("Enter a focus point (or press enter to finish): ").strip()
+                        if not point:
+                            break
+                        focus_points.append(point)
+                    
+                    template = input("Enter custom template structure (press enter to skip): ").strip() or None
+                    
+                    custom_prompt = CustomPrompt(
+                        instruction=instruction,
+                        tone=tone,
+                        focus_points=focus_points if focus_points else None,
+                        custom_template=template
+                    )
+                    
+                    print("\nGenerating custom email variant...")
+                    custom_variants = pipeline.generate_email_variants(founder, investor, custom_prompt)
+                    
+                    if custom_variants:
+                        selected_email = custom_variants[0]  # Get the custom variant
+                        break
+                    else:
+                        print("Failed to generate custom variant. Please try again or select from AI variants.")
+                        continue
+                        
+                elif 1 <= choice <= len(email_variants):
                     selected_email = email_variants[choice-1]
                     break
-                print(f"Please enter a number between 1 and {len(email_variants)}")
+                else:
+                    print(f"Please enter a number between 0 and {max(5, len(email_variants))}")
             except ValueError:
                 print("Please enter a valid number")
+        
+        # Display selected or custom email for confirmation
+        print("\nSelected Email:")
+        print(f"{'='*50}")
+        print(f"Variant: {selected_email.variant.value.upper()}")
+        print(f"Subject: {selected_email.subject}")
+        print(f"\nBody:\n{selected_email.body}")
+        print(f"{'='*50}")
         
         # Verify selected email
         verification_results = pipeline.verify_email(selected_email)
