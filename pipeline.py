@@ -342,7 +342,7 @@ def main():
         # Now ask if user wants to create a custom prompt
         print("\nOptions:")
         print("1-4: Select from AI-generated variants above")
-        print("5: Create a custom prompt")
+        print("5: Write a custom email")
         print("0: Exit")
         
         while True:
@@ -352,35 +352,41 @@ def main():
                     print("Exiting program...")
                     return
                 elif choice == 5:
-                    # Handle custom prompt
-                    instruction = input("\nEnter your custom instruction: ")
-                    tone = input("Enter desired tone (press enter to skip): ").strip() or None
+                    # Handle custom email
+                    subject = input("\nEnter the email subject: ")
+                    body = input("Enter the email body: ")
                     
-                    focus_points = []
-                    while True:
-                        point = input("Enter a focus point (or press enter to finish): ").strip()
-                        if not point:
-                            break
-                        focus_points.append(point)
-                    
-                    template = input("Enter custom template structure (press enter to skip): ").strip() or None
-                    
-                    custom_prompt = CustomPrompt(
-                        instruction=instruction,
-                        tone=tone,
-                        focus_points=focus_points if focus_points else None,
-                        custom_template=template
+                    custom_email = EmailTemplate(
+                        subject=subject,
+                        body=body,
+                        variant=EmailVariant.CUSTOM
                     )
                     
-                    print("\nGenerating custom email variant...")
-                    custom_variants = pipeline.generate_email_variants(founder, investor, custom_prompt)
+                    print("\nCustom Email:")
+                    print(f"{'='*50}")
+                    print(f"Subject: {custom_email.subject}")
+                    print(f"\nBody:\n{custom_email.body}")
+                    print(f"{'='*50}")
                     
-                    if custom_variants:
-                        selected_email = custom_variants[0]  # Get the custom variant
-                        break
+                    # Ask if user wants to enhance the email using AI
+                    enhance = input("\nDo you want to enhance this email using AI? (yes/no): ").lower()
+                    if enhance == 'yes':
+                        custom_prompt = CustomPrompt(
+                            instruction="Enhance the following email:",
+                            custom_template=f"Subject: {custom_email.subject}\n\nBody: {custom_email.body}"
+                        )
+                        
+                        print("\nEnhancing custom email...")
+                        enhanced_variants = pipeline.generate_email_variants(founder, investor, custom_prompt)
+                        
+                        if enhanced_variants:
+                            selected_email = enhanced_variants[0]  # Get the enhanced variant
+                        else:
+                            print("Failed to enhance the email. Using the original custom email.")
+                            selected_email = custom_email
                     else:
-                        print("Failed to generate custom variant. Please try again or select from AI variants.")
-                        continue
+                        selected_email = custom_email
+                    break
                         
                 elif 1 <= choice <= len(email_variants):
                     selected_email = email_variants[choice-1]
