@@ -16,6 +16,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
+groq_client = groq.Client(api_key=os.getenv("GROQ_API_KEY"))
+
 # Endpoint to get environment variables
 @app.route('/env', methods=['GET'])
 def get_env():
@@ -31,25 +33,6 @@ def create_founder():
     founder = Founder(**data)
     return jsonify(asdict(founder))
 
-# Function to generate email content using Groq API
-def generate_email_content(founder):
-    client = groq.Client(api_key=os.getenv("GROQ_API_KEY"))
-    prompt = f"""
-    Generate a professional email for {founder.name}, the founder of {founder.company_name},
-    who is working in the {founder.industry} industry at {founder.stage} stage.
-    The pitch details: {founder.pitch}
-    """
-    response = client.generate(prompt=prompt)
-    return response.text
-
-# Endpoint to send an AI-generated email
-@app.route('/generate-email', methods=['POST'])
-def generate_email():
-    data = request.json
-    founder = Founder(**data)
-    email_content = generate_email_content(founder)
-    return jsonify({"email_content": email_content})
-
 # Endpoint to send an email
 @app.route('/send-email', methods=['POST'])
 def send_email():
@@ -57,11 +40,7 @@ def send_email():
     sender_email = os.getenv("SMTP_EMAIL")
     receiver_email = data["to"]
     subject = data["subject"]
-    body = data.get("body", "")
-    
-    if not body:
-        founder = Founder(**data)
-        body = generate_email_content(founder)
+    body = data["body"]
     
     msg = MIMEMultipart()
     msg['From'] = sender_email
@@ -75,6 +54,26 @@ def send_email():
             server.login(sender_email, os.getenv("SMTP_PASSWORD"))
             server.sendmail(sender_email, receiver_email, msg.as_string())
         return jsonify({"message": "Email sent successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Endpoint to generate email content using Groq
+@app.route('/generate-email', methods=['POST'])
+def generate_email():
+    data = request.json
+    founder = Founder(**data)
+    prompt = f"Generate an email for {founder.name} of {founder.company_name} in {founder.industry} industry. Pitch: {founder.pitch}"
+    
+    try:
+        response = groq_client.chat.completions.create(
+            model="mixtral-8x7b-32768",
+            messages=[
+                {"role": "system", "content": "You are an email generator."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        email_content = response.choices[0].message.content
+        return jsonify({"email_content": email_content})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
