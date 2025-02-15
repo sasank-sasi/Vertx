@@ -1,0 +1,8 @@
+"Matched Company","Match Score","Industry","Verticals","Explanation"
+"HealthBridge","90.0","HealthTech","Telemedicine, AI Diagnostics, Healthcare","Strong match with overlapping AI Diagnostics and HealthTech focus, complementary telemedicine and medical imaging."
+"BioTech Innovations","80.0","BioTech","Drug Discovery, AI, Healthcare","Strong match with overlapping healthcare and AI technologies, but diagnostics and drug discovery have some differences."
+"LogisticsPro","70.0","Logistics","Supply Chain, IoT, Analytics","Overlapping AI and analytics technologies, but different industries may require significant adaptation."
+"RetailAI","70.0","Retail","E-commerce, AI, Customer Analytics","Overlapping AI technology and potential for collaboration, but different industries."
+"EcoHarvest Technologies","60.0","AgriTech","Sustainable Agriculture, IoT, AI","Potential match with some overlap in AI technology, but different industries."
+"CyberShield AI","60.0","Cybersecurity","AI Security, Blockchain, Cloud Security","Overlapping AI technology, but different industries. Some potential for collaboration or cross-industry insights."
+"EduTech Plus","60.0","EdTech","Online Learning, AI Tutoring, EdTech","Partial match due to overlapping AI technology, but different industries (HealthTech vs EdTech)."
