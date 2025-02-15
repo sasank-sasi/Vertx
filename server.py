@@ -99,7 +99,10 @@ async def match_investors(founder: FounderInput):
         logger.info(f"Processing investor matching request for company: {founder.company_name}")
         
         # Verify investors dataset exists
-        investors_path = os.path.join(os.path.dirname(__file__), 'F2I/dataset.csv')
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Construct path to the data file
+        investors_path = os.path.join(current_dir, 'F2F', 'expanded_founders_data.csv')
         if not os.path.exists(investors_path):
             logger.error(f"Investors dataset not found at: {investors_path}")
             raise HTTPException(
