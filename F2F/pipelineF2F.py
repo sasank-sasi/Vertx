@@ -134,7 +134,7 @@ class FounderMatcher:
             current_dir = os.path.dirname(os.path.abspath(__file__))
 
             # Construct path to the data file
-            founders_path = os.path.join(current_dir, 'F2F', 'expanded_founders_data.csv')
+            founders_path = os.path.join(current_dir, 'expanded_founders_data.csv')
 
             # Read the CSV file
             founders_df = pd.read_csv(founders_path)
