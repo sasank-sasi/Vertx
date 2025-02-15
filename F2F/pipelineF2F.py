@@ -131,7 +131,13 @@ class FounderMatcher:
         """
         try:
             # Load founders dataset
-            founders_df = pd.read_csv('/Users/sasanksasi/Downloads/project/VertexAi/F2F/expanded_founders_data.csv')
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # Construct path to the data file
+            founders_path = os.path.join(current_dir, 'F2F', 'expanded_founders_data.csv')
+
+            # Read the CSV file
+            founders_df = pd.read_csv(founders_path)
             
             # Find matches
             matches = self.find_matches(new_founder_data, founders_df)
