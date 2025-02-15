@@ -1,0 +1,79 @@
+Ai/templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder Matching API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f5f5f7;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #eee;
+        }
+        .header h1 {
+            color: #1d1d1f;
+            margin: 0;
+        }
+        .version {
+            color: #86868b;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .endpoint-list {
+            list-style: none;
+            padding: 0;
+        }
+        .endpoint-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+        .endpoint-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .endpoint-item a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Founder Matching API</h1>
+            <div class="version">Version: {{ api_version }}</div>
+        </div>
+        
+        <div class="content">
+            <h2>Available Endpoints</h2>
+            <ul class="endpoint-list">
+                {% for name, path in endpoints.items() %}
+                <li class="endpoint-item">
+                    <a href="{{ path }}">{{ name | replace('_', ' ') | title }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
