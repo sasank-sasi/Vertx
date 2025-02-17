@@ -8,6 +8,7 @@ from typing import List, Optional
 import logging
 from F2F.pipelineF2F import FounderMatcher
 from F2I.pipelineF2I import InvestorMatcher
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,6 +20,16 @@ groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Initialize FastAPI app
 app = FastAPI(title="Founder Matching API")
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize matchers
 founder_matcher = FounderMatcher(groq_client)
